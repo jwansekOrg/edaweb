@@ -56,10 +56,9 @@ def index():
         with open(os.path.join("static", "index.md"), "r") as f:
             return flask.render_template(
                 "index.html", 
-                **get_template_items("eden's site :3", db),
+                **get_template_items("Eden Attenborough", db),
                 markdown = parser.parse_text(f.read()),
                 featured_thoughts = db.get_featured_thoughts(),
-                tweets = db.get_cached_tweets(7) + [("view all tweets...", db.get_my_twitter())],
                 commits = db.get_cached_commits(since = datetime.datetime.now() - datetime.timedelta(days = 7))
             )
 
@@ -211,8 +210,8 @@ if __name__ == "__main__":
     try:
         if sys.argv[1] == "--production":
             #serve(TransLogger(app), host='127.0.0.1', port = 6969)
-            serve(TransLogger(app), host='0.0.0.0', port = 6969, threads = 32)
+            serve(TransLogger(app), host='0.0.0.0', port = CONFIG.get("site", "port"), threads = 32)
         else:
-            app.run(host = "0.0.0.0", port = 5001, debug = True)
+            app.run(host = "0.0.0.0", port = CONFIG.get("site", "testingPort"), debug = True)
     except IndexError:
-        app.run(host = "0.0.0.0", port = 5001, debug = True)
+        app.run(host = "0.0.0.0", port = CONFIG.get("site", "testingPort"), debug = True)

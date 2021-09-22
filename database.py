@@ -123,25 +123,6 @@ class Database:
             """)
             return cursor.fetchall()
 
-    def get_cached_tweets(self, numToGet = None, recurse = True):
-        with self.__connection.cursor() as cursor:
-            if numToGet is not None:
-                cursor.execute("SELECT text, url FROM twitterCache ORDER BY appended DESC LIMIT %s;", (numToGet, ))
-            else:
-                cursor.execute("SELECT text, url FROM twitterCache ORDER BY appended DESC;")
-            if recurse:
-                threading.Thread(target = update_cache).start()
-            return list(cursor.fetchall())
-
-    def update_twitter_cache(self, requested):
-        with self.__connection.cursor() as cursor:
-            cursor.execute("SELECT DISTINCT url FROM twitterCache;")
-            urls = [i[0] for i in cursor.fetchall()]
-            for url, text in requested:
-                if url not in urls:
-                    cursor.execute("INSERT INTO twitterCache (text, url) VALUES (%s, %s);", (text, url))
-        self.__connection.commit()
-
     def get_cached_commits(self, since = None, recurse = True):
         with self.__connection.cursor() as cursor:
             if since is not None:
@@ -193,24 +174,6 @@ def update_cache():
 
 CONFIG = configparser.ConfigParser()
 CONFIG.read("edaweb.conf")
-
-def request_recent_tweets(numToGet):
-    tweets = []
-    domain = "http://" + CONFIG.get("nitter", "domain")
-    with Database() as db:
-        for title, url in db.get_header_links():
-            if title == "twitter":
-                break
-    tree = html.fromstring(requests.get(url).content)
-    for i, tweetUrlElement in enumerate(tree.xpath('//*[@class="tweet-link"]'), 0):
-        if i > 0:
-            tweets.append((
-                domain + tweetUrlElement.get("href"),
-                tweetUrlElement.getparent().find_class("tweet-content media-body")[0].text
-            ))
-        if len(tweets) >= numToGet:
-            break
-    return tweets
             
 def request_recent_commits(since = datetime.datetime.now() - datetime.timedelta(days=7)):
     g = Github(CONFIG.get("github", "access_code"))
